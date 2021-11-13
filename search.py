@@ -2,66 +2,79 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import re
 import requests
+from simhash import Simhash
 from time import sleep
 import psycopg2
+import collections
+
+
+def calc_simhash_value(curr_page, soup):
+    curr_text = soup.get_text()
+    lines = (line.strip() for line in curr_text.splitlines())
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    curr_text = '\n'.join(chunk for chunk in chunks if chunk)
+    curr_simhash_val = float(Simhash(curr_text).value)
+    return curr_simhash_val
 
 
 class Search:
 
     def __init__(self, main_page, start_page=None):
-        self.djvu_patterns = [r'.*\.djvu$', r'.*\.\[djv\-fax\]$.zip']
         self.main_page = main_page
         self.start_page = start_page
-        self.visited_pages = set()
-        self.curr_djvu_list = []
+        self.hashes_of_visited_pages = set()
+        self.curr_djvu_set = set()
+        self.root = start_page if start_page is not None else main_page
+        self.queue = collections.deque([self.root])
 
     def insert_link_into_db(self, link):
-        connection = psycopg2.connect(user="postgres", password="xxx",
+        connection = psycopg2.connect(user="xxx", password="xxx",
                                       host="127.0.0.1", dbname="djvu")
         cursor = connection.cursor()
         cursor = connection.cursor()
-        insert_query = """ INSERT INTO djvu_links  VALUES ('""" + \
-                       link + """')"""
+        insert_query = """INSERT INTO djvu_links  VALUES ('""" + link + """')"""
         cursor.execute(insert_query)
         connection.commit()
 
-    def dfs(self, curr_page):
-        self.visited_pages.add(curr_page)
-        print(f'curr_page {curr_page}')
-        soup = BeautifulSoup(urlopen(curr_page))
-        for link in soup.find_all('a', href=True):
-            next_link = link.get('href')
-            if next_link is not None and len(
-                    next_link) and next_link != '/' and (
-                    self.main_page in next_link or next_link[0] == '/'):
-                flag = False
-                for pattern in self.djvu_patterns:
-                    flag |= (re.match(pattern, next_link) is not None)
-                try:
-                    if next_link[0] == '/':
-                        next_link = self.main_page + next_link
-                    r = requests.head(next_link)
-                    sleep(10)
-                    if flag and 'text/html' not in r.headers['content-type']:
-                        self.curr_djvu_list.append(next_link)
-                        self.insert_link_into_db(next_link)
-                        return
-                except requests.exceptions.ConnectionError:
-                    r.status_code = "Connection refused"
+    def djvu_links(self, href):
+        return href and re.compile("djv").search(href)
 
-                if r.status_code == 200 and \
-                        'text/html' in r.headers['content-type'] and \
-                        next_link not in self.visited_pages:
-                    self.dfs(next_link)
+    def another_links(self, href):
+        return href and not self.djvu_links(href)
 
-    def whole_search(self):
-        if self.start_page is not None:
-            self.dfs(self.start_page)
-        else:
-            self.dfs(self.main_page)
+    def bfs(self):
+        soup = BeautifulSoup(urlopen(self.root))
+        root_simhash_val = calc_simhash_value(self.root, soup)
+        self.hashes_of_visited_pages.add(root_simhash_val)
+        while self.queue:
+            curr_page = self.queue.popleft()
+            soup = BeautifulSoup(urlopen(curr_page))
+            for link in soup.find_all('a', href=self.djvu_links):
+                whole_link = curr_page + link.get('href')
+                if whole_link not in self.curr_djvu_set:
+                    r = requests.head(whole_link)
+                    if r.status_code == 200 and 'text/html' not in r.headers['content-type']:
+                        self.curr_djvu_set.add(whole_link)
+                        self.insert_link_into_db(whole_link.replace("'", "''"))
+            for link in soup.find_all('a', href=self.another_links):
+                next_link = link.get('href')
+                if len(next_link) and next_link[0] != '.' and next_link[0] != '#' and next_link[-1] == '/':
+                    try:
+                        next_link = curr_page + next_link
+                        r = requests.head(next_link)
+                        sleep(5)
+                        if r.status_code == 200 and 'text/html' in r.headers['content-type']:
+                            curr_soup = BeautifulSoup(urlopen(next_link))
+                            next_simhash_val = calc_simhash_value(next_link, curr_soup)
+                            if next_simhash_val not in self.hashes_of_visited_pages:
+                                print(f'new page is {next_link}')
+                                self.hashes_of_visited_pages.add(next_simhash_val)
+                                self.queue.append(next_link)
+                    except requests.exceptions.ConnectionError:
+                        r.status_code = "Connection refused"
 
-    def get_djvu_list(self):
-        return self.curr_djvu_list
+    def get_djvu_set(self):
+        return self.curr_djvu_set
 
 
 sites = [
