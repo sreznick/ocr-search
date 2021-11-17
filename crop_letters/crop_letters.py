@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 def cut_lines(bi: np.ndarray):
-    bi_erode = cv2.erode(bi, np.ones((2, 7), np.uint8), iterations=1)
+    bi_erode = cv2.erode(bi, np.ones((1, 7), np.uint8), iterations=1)
     
     # Init 'scanline'
     line_h = 3
@@ -40,7 +40,7 @@ def cut_lines(bi: np.ndarray):
     for i in range(len(top)-1):
         lines.append(bi[max(0, top[i]-line_h):min(bi.shape[0]-1, bottom[i+1]+line_h), :])
     
-    return np.array(lines, dtype=np.ndarray)
+    return lines
 
 def cut_words(bi_line: np.ndarray):
     bi_erode = cv2.erode(bi_line, np.ones((7, 7), np.uint8), iterations=1)
@@ -59,34 +59,53 @@ def cut_words(bi_line: np.ndarray):
         col = bi_erode[:, x:x+scan_w]
         cnt = np.sum(col.flatten() == 0)*100/(scan_h*scan_w)
         space_len += 1
+            #print(cnt)
         
         
-        if len(begin) == len(end) and cnt > 15.0:
+        if len(begin) == len(end) and cnt >= 15.0:
             begin.append(x)
             if len(begin):
                 space_w.append(space_len)
-        elif len(begin) > len(end) and cnt < 4.5:
-            end.append(x + scan_w)
-            space_len = 0
+        else:
+            #print(cnt)
+            if len(begin) > len(end) and cnt <= 10.0:
+                end.append(x + scan_w)
+                space_len = 0
             
-    space_w = int(np.array(space_w).mean() + 1)
+    space_w = int(np.array(space_w).mean())
     
-    #if len(begin) > len(end):
-        #begin = begin[:-1]
+    if len(begin) > len(end):
+        begin = begin[:-1]
             
     # Mark top and bottom of the page
-    left = np.array(np.append([max(0, begin[0] - space_w)], end), dtype=int)
-    right = np.array(np.append(begin, [min(bi_line.shape[1]-1, end[-1] + space_w)]), dtype=int)
+    left = [max(0, begin[0] - space_w)]
+    right = [max(0, begin[0] - space_w)]
+    k = 0
+    for i in range(len(begin)):
+        if i == 0 or begin[i] - right[k] >= space_w/3:
+            left.append(begin[i])
+            right.append(end[i])
+            k += 1
+        else:
+            right[k] = end[i]
+            
+    left.append(min(bi_line.shape[1]-1, end[-1] + space_w))
+    right.append(min(bi_line.shape[1]-1, end[-1] + space_w))
+    left = np.array(left, dtype=int)
+    right = np.array(right, dtype=int)
+    
+    
+    #left = np.array(np.append([max(0, begin[0] - space_w)], end), dtype=int)
+    #right = np.array(np.append(begin, [min(bi_line.shape[1]-1, end[-1] + space_w)]), dtype=int)
     
     # Cut lines with margin
     words = []
+    blank = np.full((scan_h, space_w), 255, dtype=np.uint8)
     
-    for i in range(len(right)-1):
-        #plt.subplot(len(right)-1, 1, i+1)
-        #plt.imshow(bi_erode[:, left[i]:right[i+1]], cmap='gray')
-        words.append(bi_line[:, left[i]:right[i+1]].T)
+    for i in range(len(right)-2):
+        words.append(np.hstack((blank, bi_line[:, left[i+1]:right[i+1]], blank)).T)
     
-    return np.array(words, dtype=np.ndarray)
+    return words
 
 def intersecting(rect1, rect2): # rect1 левее rect2
     (x1, y1, w1, h1) = rect1
