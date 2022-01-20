@@ -1,2 +1,5 @@
 .ipynb_checkpoints/
-crop_letters/__pycache__/
+*__pycache__*
+.idea/
+ocr-search.iml
+temp

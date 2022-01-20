@@ -28,7 +28,7 @@ class Context(djvu.decode.Context):
     def process(self, djvu_path, png_path, mode, pages=[]):
         document = self.new_document(djvu.decode.FileURI(djvu_path))
         for i, page in tqdm(enumerate(document.pages)):
-            page.get_info(wait=1)
+            page.get_info(wait=True)
             if i not in pages and pages != []:
                 continue
             page_job = page.decode(wait=True)
@@ -40,12 +40,14 @@ class Context(djvu.decode.Context):
             page_job.render(mode, rect, rect, djvu_pixel_format, row_alignment=bytes_per_line, buffer=color_buffer)
             mask_buffer = numpy.zeros((height, bytes_per_line // 4), dtype=numpy.uint32)
             if mode == djvu.decode.RENDER_FOREGROUND:
-                page_job.render(djvu.decode.RENDER_MASK_ONLY, rect, rect, djvu_pixel_format, row_alignment=bytes_per_line, buffer=mask_buffer)
+                page_job.render(djvu.decode.RENDER_MASK_ONLY, rect, rect, djvu_pixel_format,
+                                row_alignment=bytes_per_line, buffer=mask_buffer)
                 mask_buffer <<= 24
                 color_buffer |= mask_buffer
             color_buffer ^= 0xFF000000
             surface = cairo.ImageSurface.create_for_data(color_buffer, cairo_pixel_format, width, height)
             surface.write_to_png(png_path + str(i) + ".png")
+
 
 def book2pngs(djvu_path, png_path, pages=[]):
     mode=djvu.decode.RENDER_COLOR
