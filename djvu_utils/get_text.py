@@ -13,7 +13,7 @@ def print_text(sexpr, text_file, level=0):
         for child in sexpr[5:]:
             print_text(child, text_file, level + 1)
     else:
-        text_file.write(str(sexpr) + "\n")
+        text_file.write('"' + sexpr.value + '"' + "\n")
 
 class Context(djvu.decode.Context):
 
