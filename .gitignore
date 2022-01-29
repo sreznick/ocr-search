@@ -3,3 +3,6 @@
 .idea/
 ocr-search.iml
 temp
+*__init__*
+venv
+requirements.txt

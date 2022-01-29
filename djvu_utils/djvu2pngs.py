@@ -1,11 +1,6 @@
-#This file is based on examples provided by python-djvulibre
+# This file is based on examples provided by python-djvulibre
 
-from __future__ import print_function
-from tqdm.notebook import tqdm
-
-import argparse
-import os
-import sys
+# from tqdm.notebook import tqdm
 
 import cairo
 import djvu.decode
@@ -16,18 +11,12 @@ djvu_pixel_format = djvu.decode.PixelFormatRgbMask(0xFF0000, 0xFF00, 0xFF, bpp=3
 djvu_pixel_format.rows_top_to_bottom = 1
 djvu_pixel_format.y_top_to_bottom = 0
 
-class Context(djvu.decode.Context):
 
-    def handle_message(self, message):
-        if isinstance(message, djvu.decode.ErrorMessage):
-            print(message, file=sys.stderr)
-            # Exceptions in handle_message() are ignored, so sys.exit()
-            # wouldn't work here.
-            os._exit(1)
+class Context(djvu.decode.Context):
 
     def process(self, djvu_path, png_path, mode, pages=[]):
         document = self.new_document(djvu.decode.FileURI(djvu_path))
-        for i, page in tqdm(enumerate(document.pages)):
+        for i, page in enumerate(document.pages):
             page.get_info(wait=True)
             if i not in pages and pages != []:
                 continue

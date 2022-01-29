@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 def cut_lines(bi: np.ndarray):
@@ -20,9 +20,9 @@ def cut_lines(bi: np.ndarray):
         cnt = np.sum(line.flatten() == 0)*100/(line_w*line_h)
         
         
-        if len(begin) == len(end) and cnt > 10.0:
+        if len(begin) == len(end) and cnt > 15.0:
             begin.append(y)
-        elif len(begin) > len(end) and cnt < 5.0:
+        elif len(begin) > len(end) and cnt < 10.0:
             end.append(y + line_h)
             line_he.append(y + line_h - begin[len(begin) - 1])
             
@@ -43,7 +43,7 @@ def cut_lines(bi: np.ndarray):
     return lines
 
 def cut_words(bi_line: np.ndarray):
-    bi_erode = cv2.erode(bi_line, np.ones((7, 7), np.uint8), iterations=1)
+    bi_erode = cv2.erode(bi_line, np.ones((9, 7), np.uint8), iterations=1)
     
     # Init 'scanline'
     scan_h = bi_line.shape[0]
@@ -62,16 +62,18 @@ def cut_words(bi_line: np.ndarray):
             #print(cnt)
         
         
-        if len(begin) == len(end) and cnt >= 15.0:
+        if len(begin) == len(end) and cnt >= 10.0:
             begin.append(x)
             if len(begin):
                 space_w.append(space_len)
         else:
             #print(cnt)
-            if len(begin) > len(end) and cnt <= 10.0:
+            if len(begin) > len(end) and cnt <= 5.0:
                 end.append(x + scan_w)
                 space_len = 0
-            
+
+    if not len(space_w) or not len(begin) or not len(end):
+        return []
     space_w = int(np.array(space_w).mean())
     
     if len(begin) > len(end):
@@ -194,7 +196,7 @@ def binary(image):
     ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     return img, thresh
 
-def contour_letters_draw(image):
+'''def contour_letters_draw(image):
     img, bi = binary(image)
     rectangles = contour_letters(bi)
     
@@ -206,7 +208,7 @@ def contour_letters_draw(image):
         (x, y, w, h) = rec
         cv2.rectangle(contoured, (x, y), (x + w, y + h), (170, 0, 0), h//100 + 2)
     
-    plt.imshow(contoured)
+    plt.imshow(contoured)'''
     
     
 def letter_28x28(letter_cut):
