@@ -3,45 +3,36 @@ Use annotated djvu documents to generate:
   * png files -- one per page,
   * txt files -- one per document (book).
 
-Currently raises `djvu.decode.NotAvailable` on one of the documents.
+For whatever reason converting some pages to an image currently raises an
+exception. These are skipped, a corresponding message is printed.
+
+If a directory with pages for a given document already exists and is not empty
+it is assumed that this document has been processed, i.e., all scans have been
+generated. Such documents are skipped.
 """
 
 import os
+import shared_paths as paths
+from book_ids import get_book_names_and_ids
 from djvu_utils.get_text import dump_text
 from djvu_utils.djvu2pngs import book2pngs
 
 
-DATA_DIR = os.path.join(os.getcwd(), 'data')
-BOOK_DIR = os.path.join(DATA_DIR, 'books')
-PAGE_DIR = os.path.join(DATA_DIR, 'pages')
-TEXT_DIR = os.path.join(DATA_DIR, 'text')
-
-
 def main():
-    # collect paths to all djvu files in BOOK_DIR directory
-    djvu_files = []
-    for entry in os.scandir(BOOK_DIR):
-        # skip non-djvu files
-        if entry.is_file and entry.name.endswith('.djvu'):
-            djvu_files.append(entry)
+    for book, book_id in get_book_names_and_ids():
+        input_file = os.path.join(paths.BOOK_DIR, book + '.djvu')
 
-    # generate ids for every book
-    num_digits = len(str(len(djvu_files) - 1))
-    ids = ['{:0{:d}d}'.format(x, num_digits) for x in range(len(djvu_files))]
+        # 1. extract all text from book
+        output_file = os.path.join(paths.TEXT_DIR, book_id + '.txt')
+        if not os.path.exists(output_file):
+            dump_text(input_file, output_file)
 
-    # process every file
-    with open(os.path.join(DATA_DIR, 'book_ids.csv'), 'w') as id_file:
-        for djvu_file, id in zip(djvu_files, ids):
-            txt_file = os.path.join(TEXT_DIR, id + '.txt')
-            dump_text(djvu_file.path, txt_file)
-
-            png_dir = os.path.join(PAGE_DIR, id)
-            if not os.path.exists(png_dir):
-                os.mkdir(png_dir)
-            book2pngs(djvu_file.path, png_dir + '/')
-
-            id_file.write('"' + djvu_file.name[:-5] + '"')
-            id_file.write(',' + id + '\n')
+        # 2. save all pages as png images
+        output_dir = os.path.join(paths.PAGE_DIR, book_id)
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
+        if not os.listdir(output_dir):
+            book2pngs(input_file, output_dir)
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ TODO: Refactor, possibly join with `get_text.py`
 """
 
 
+import os
 import cairo
 import djvu.decode
 import numpy
@@ -30,7 +31,11 @@ class Context(djvu.decode.Context):
             bytes_per_line = cairo.ImageSurface.format_stride_for_width(cairo_pixel_format, width)
             assert bytes_per_line % 4 == 0
             color_buffer = numpy.zeros((height, bytes_per_line // 4), dtype=numpy.uint32)
-            page_job.render(mode, rect, rect, djvu_pixel_format, row_alignment=bytes_per_line, buffer=color_buffer)
+            try:
+                page_job.render(mode, rect, rect, djvu_pixel_format, row_alignment=bytes_per_line, buffer=color_buffer)
+            except djvu.decode.NotAvailable:  # skip page
+                print(f'djvu2pngs: Error processing page {i} of {djvu_path}')
+                continue
             mask_buffer = numpy.zeros((height, bytes_per_line // 4), dtype=numpy.uint32)
             if mode == djvu.decode.RENDER_FOREGROUND:
                 page_job.render(djvu.decode.RENDER_MASK_ONLY, rect, rect, djvu_pixel_format,
@@ -39,7 +44,7 @@ class Context(djvu.decode.Context):
                 color_buffer |= mask_buffer
             color_buffer ^= 0xFF000000
             surface = cairo.ImageSurface.create_for_data(color_buffer, cairo_pixel_format, width, height)
-            surface.write_to_png(png_path + str(i) + ".png")
+            surface.write_to_png(os.path.join(png_path, str(i) + ".png"))
 
 
 def book2pngs(djvu_path, png_path, pages=[]):
