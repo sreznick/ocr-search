@@ -9,8 +9,7 @@ import shutil
 import shared_paths as paths
 
 
-REMOVE_PAGES = True
-REMOVE_TEXTS = True
+REMOVE_OLD = True  # remove previously generated files (page images, etc)
 
 
 def main():
@@ -35,19 +34,24 @@ def main():
             outfile.write(f'"{id_}"')
             outfile.write('\n')
 
-    # remove all page scans
-    if REMOVE_PAGES:
+    if REMOVE_OLD:
         for id_ in ids:
+            # remove all page scans
             book_pages_dir = os.path.join(paths.PAGE_DIR, id_)
             if os.path.exists(book_pages_dir):
                 shutil.rmtree(book_pages_dir)
 
-    # remove all text files with book contents
-    if REMOVE_TEXTS:
-        for id_ in ids:
+            # remove all text files with book contents
             book_text_file = os.path.join(paths.TEXT_DIR, id_ + '.txt')
             if os.path.exists(book_text_file):
                 os.remove(book_text_file)
+
+        # delete words dataset
+        word_images_dir = os.path.join(paths.WORD_DIR, 'images')
+        if os.path.exists(word_images_dir):
+            shutil.rmtree(word_images_dir)
+        for file in os.scandir(paths.WORD_DIR):
+            os.remove(file)
 
 
 def get_book_names_and_ids() -> Generator[Tuple[str, str], None, None]:

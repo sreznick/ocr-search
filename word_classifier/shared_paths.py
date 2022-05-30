@@ -21,6 +21,7 @@ DATA_DIR = os.path.join(ROOT, 'data')
 BOOK_DIR = os.path.join(DATA_DIR, 'books')  # djvu files
 PAGE_DIR = os.path.join(DATA_DIR, 'pages')  # scans of individual pages
 TEXT_DIR = os.path.join(DATA_DIR, 'text')   # all text extracted from djvu docs
+WORD_DIR = os.path.join(DATA_DIR, 'words')  # dataset of word images
 
 # file with document name -> document id mapping
 BOOK_ID_FILE = os.path.join(DATA_DIR, 'book_ids.csv')
@@ -28,6 +29,6 @@ BOOK_ID_FILE = os.path.join(DATA_DIR, 'book_ids.csv')
 
 if __name__ == '__main__':
     # create directories if they don't exist yet
-    for d in (DATA_DIR, BOOK_DIR, PAGE_DIR, TEXT_DIR):
-        if not os.exists(d):
+    for d in (DATA_DIR, BOOK_DIR, PAGE_DIR, TEXT_DIR, WORD_DIR):
+        if not os.path.exists(d):
             os.mkdir(d)

@@ -29,6 +29,9 @@ class Context(djvu.decode.Context):
             page.get_info(wait=True)
             if i not in pages and pages != []:
                 continue
+            if len(page.text.sexpr) == 0:
+                # write entry for a page without recognized text
+                text_file.write(f'page{[0, 0, page.width, page.height]}\n')
             print_text(page.text.sexpr, text_file)
 
 
