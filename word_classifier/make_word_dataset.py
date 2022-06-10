@@ -1,4 +1,6 @@
 import os
+import string
+import re
 import numpy as np
 import cv2
 from tqdm import tqdm
@@ -7,8 +9,9 @@ from djvu_utils.txt_utils import read_book
 from book_ids import get_book_names_and_ids
 
 
-MAX_WIDTH = 220
-MAX_HEIGHT = 50
+MAX_HEIGHT = 32
+IMG_FORMAT = 'jpg'
+RU_LETTERS = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
 
 
 def main():
@@ -29,6 +32,10 @@ def main():
         book_txt = os.path.join(paths.TEXT_DIR, book_id + '.txt')
         pages = read_book(book_txt)  # list of Page objects
 
+        img_dir = os.path.join(IMG_DIR, str(book_id))
+        assert not os.path.exists(img_dir)
+        os.mkdir(img_dir)
+
         for page_num in tqdm(range(len(pages))):
             page = pages[page_num]
             if len(page.words) == 0:
@@ -43,6 +50,11 @@ def main():
             page_height, page_width, _ = page_img.shape
 
             for word in page.words:
+                # skip word if not matched by `filter_word`
+                word.value = filter_word(word.value)
+                if not word.value:
+                    continue
+
                 xywh = word.get_xywh(width=page_width,
                                      height=page_height)
                 if not xywh:  # invalid image size
@@ -52,7 +64,7 @@ def main():
                 word_img = shrink_image(word_img)         # resize
 
                 # write image
-                fname = os.path.join(IMG_DIR, f'{word_num}.png')
+                fname = os.path.join(img_dir, f'{word_num}.{IMG_FORMAT}')
                 cv2.imwrite(fname, word_img)
 
                 # write text entries
@@ -69,24 +81,28 @@ def main():
     f_info.close()
 
 
-def shrink_image(img: np.ndarray) -> np.ndarray:
+def shrink_image(img: np.ndarray, max_height: int = MAX_HEIGHT) -> np.ndarray:
+    """
+    Resize image so that its height <= max_height.
+    """
     h, w, _ = img.shape
-    y_ratio = h / MAX_HEIGHT
-    x_ratio = w / MAX_WIDTH
-    if max(x_ratio, y_ratio) <= 1:  # no need to resize
-        return img
-
-    # calculate new height and width
-    if x_ratio > y_ratio:
-        new_width = MAX_WIDTH
-        new_height = int(round(h / x_ratio))
-    else:
-        new_width = int(round(w / y_ratio))
-        new_height = MAX_HEIGHT
-
-    img = cv2.resize(img, (new_width, new_height),
-                     interpolation=cv2.INTER_AREA)
+    y_ratio = h / max_height
+    if y_ratio > 1:
+        w_new = int(round(w / y_ratio))
+        img = cv2.resize(img, (max_height, w_new),
+                         interpolation=cv2.INTER_AREA)
     return img
+
+
+def filter_word(word: str) -> str:
+    """
+    Returns substring of word if it satisfies required criteria.
+    """
+    pattern = re.compile(f'([{RU_LETTERS}]+)[{string.punctuation}]?')
+    match = re.match(pattern, word)
+    if match is None:
+        return ''
+    return match.group(1)
 
 
 if __name__ == '__main__':
