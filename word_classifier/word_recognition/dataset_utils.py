@@ -17,13 +17,6 @@ class TRDGDataset(Dataset):
         assert os.path.exists(root), f'Invalid dataset path {root}'
         self.files = tuple(os.path.join(root, f) for f in os.listdir(root)
                            if f.endswith(img_format))
-        vocab = set()
-        for file in self.files:
-            label = self._get_label(file)
-            for ch in label:
-                vocab.add(ch)
-        self.vocab = tt.vocab.build_vocab_from_iterator(
-            vocab, specials=['<->'], special_first=True)
         self.transform = transform
         self.to_tensor = T.ToTensor()
 
