@@ -26,9 +26,11 @@ WORD_DIR = os.path.join(DATA_DIR, 'words')  # dataset of word images
 # file with document name -> document id mapping
 BOOK_ID_FILE = os.path.join(DATA_DIR, 'book_ids.csv')
 
+# directory for generated images, model checkpoints, etc
+OUTPUT_DIR = os.path.join(ROOT, 'results')
 
 if __name__ == '__main__':
     # create directories if they don't exist yet
-    for d in (DATA_DIR, BOOK_DIR, PAGE_DIR, TEXT_DIR, WORD_DIR):
+    for d in (DATA_DIR, BOOK_DIR, PAGE_DIR, TEXT_DIR, WORD_DIR, OUTPUT_DIR):
         if not os.path.exists(d):
             os.mkdir(d)

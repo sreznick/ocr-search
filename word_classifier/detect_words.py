@@ -5,10 +5,10 @@ import shared_paths as paths
 from word_detectors import mser
 
 
-INPUT_IMAGE = os.path.join(paths.PAGE_DIR, '07', '71.png')
+INPUT_IMAGE = os.path.join(paths.PAGE_DIR, '06', '71.png')
 MAX_WIDTH = 800
-INTERIM_IMAGE = os.path.join(paths.DATA_DIR, 'tmp.png')
-OUTPUT_IMAGE = os.path.join(paths.DATA_DIR, 'out.png')
+INTERIM_IMAGE = os.path.join(paths.OUTPUT_DIR, 'tmp.png')
+OUTPUT_IMAGE = os.path.join(paths.OUTPUT_DIR, 'out.png')
 
 
 def main():
