@@ -89,7 +89,8 @@ def shrink_image(img: np.ndarray, max_height: int = MAX_HEIGHT) -> np.ndarray:
     y_ratio = h / max_height
     if y_ratio > 1:
         w_new = int(round(w / y_ratio))
-        img = cv2.resize(img, (max_height, w_new),
+        # shape is specified as (width, height) in opencv
+        img = cv2.resize(img, (w_new, max_height),
                          interpolation=cv2.INTER_AREA)
     return img
 
