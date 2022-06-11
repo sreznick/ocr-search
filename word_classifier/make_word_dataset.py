@@ -11,7 +11,7 @@ from book_ids import get_book_names_and_ids
 
 MAX_HEIGHT = 32
 IMG_FORMAT = 'jpg'
-RU_LETTERS = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
+RU_LETTERS_LOWER = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
 
 
 def main():
@@ -98,7 +98,8 @@ def filter_word(word: str) -> str:
     """
     Returns substring of word if it satisfies required criteria.
     """
-    pattern = re.compile(f'([{RU_LETTERS}]+)[{string.punctuation}]?')
+    letters = RU_LETTERS_LOWER + str.upper(RU_LETTERS_LOWER)
+    pattern = re.compile(f'([{letters}]+)[{string.punctuation}]?')
     match = re.match(pattern, word)
     if match is None:
         return ''
