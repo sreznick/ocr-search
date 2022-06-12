@@ -8,5 +8,5 @@ temp
 venv
 requirements.txt
 word_classifier/data/*
-word_classifier/results
+word_classifier/results/*.pth
 !*.keep
