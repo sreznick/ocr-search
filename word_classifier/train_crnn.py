@@ -15,7 +15,7 @@ from word_recognition import dataset_utils, crnn
 DATASET_DIR = os.path.join(paths.DATA_DIR, 'words', 'train')
 BATCH_TRAIN = 64
 BATCH_EVAL = 128
-LR = 1e-3
+LR = 1e-4
 GRAD_CLIP = 1.0
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VAL_SIZE = 0.1
@@ -67,7 +67,7 @@ def main():
 
     # train the model
     model = crnn.CRNN(output_dim=len(vocab)).to(DEVICE)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.RMSprop(model.parameters(), lr=LR)
     loss_fn = CTCLoss(blank=0)
     train_loss, val_loss = train(model, train_dataloader, val_dataloader,
                                  optimizer, loss_fn)
