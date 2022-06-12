@@ -13,16 +13,15 @@ from word_recognition import dataset_utils, crnn
 from shared_paths import OUTPUT_DIR
 
 
-DATASET_DIR = os.path.join(paths.DATA_DIR, 'words')
+DATASET_DIR = os.path.join(paths.DATA_DIR, 'words', 'train')
 BATCH_TRAIN = 64
 BATCH_EVAL = 128
 LR = 1e-3
 GRAD_CLIP = 1.0
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-VAL_SIZE = 0.05
-TEST_SIZE = 0.1
-ITERATIONS = 20000
-EVAL_EVERY = 1000
+VAL_SIZE = 0.1
+ITERATIONS = 60000
+EVAL_EVERY = 2000
 
 
 def main():
@@ -38,18 +37,19 @@ def main():
         ))
     )
 
-    # split dataset into train, validate and test
+    # split dataset into train and validate and test
     val_size = int(round(len(dataset) * VAL_SIZE))
-    test_size = int(round(len(dataset) * TEST_SIZE))
-    train_size = len(dataset) - val_size - test_size
-    train_dataset, val_dataset, test_dataset = random_split(
-        dataset, [train_size, val_size, test_size])
+    train_size = len(dataset) - val_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
     # build vocab for encoding/decoding
     chars = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'
     chars = chars + chars.upper()
     vocab = tvcb.build_vocab_from_iterator(chars, specials=['<->'],
                                            special_first=True)
+    with open(os.path.join(OUTPUT_DIR, 'chars.txt'), 'w') as f:
+        for character in vocab.get_itos():
+            f.write(character + '\n')
 
     # create dataloaders
     # collate_fn takes care of different input sizes
@@ -65,11 +65,6 @@ def main():
         batch_size=BATCH_EVAL,
         collate_fn=collate_fn
     )
-    test_dataloader = DataLoader(
-        test_dataset,
-        batch_size=BATCH_EVAL,
-        collate_fn=collate_fn
-    )
 
     # train the model
     model = crnn.CRNN(output_dim=len(vocab)).to(DEVICE)
@@ -77,18 +72,6 @@ def main():
     loss_fn = CTCLoss(blank=0)
     train_loss, val_loss = train(model, train_dataloader, val_dataloader,
                                  optimizer, loss_fn)
-
-    # load best version
-    model.load_state_dict(torch.load(os.path.join(OUTPUT_DIR, 'model.pth')))
-
-    # evaluate at test
-    with torch.no_grad():
-        cur_loss, cur_samples = 0.0, 0
-        for batch in test_dataloader:
-            loss, bs = forward_pass(model, batch, loss_fn, DEVICE)
-            cur_loss += loss.item() * bs
-            cur_samples += bs
-    print(f'test loss: {cur_loss/cur_samples:.2e}')
 
     plt.figure()
     x = EVAL_EVERY * np.arange(1, len(train_loss) + 1)
