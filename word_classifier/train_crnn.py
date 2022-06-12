@@ -10,7 +10,6 @@ from torchvision import transforms as T
 import torchtext.vocab as tvcb
 import shared_paths as paths
 from word_recognition import dataset_utils, crnn
-from shared_paths import OUTPUT_DIR
 
 
 DATASET_DIR = os.path.join(paths.DATA_DIR, 'words', 'train')
@@ -47,7 +46,7 @@ def main():
     chars = chars + chars.upper()
     vocab = tvcb.build_vocab_from_iterator(chars, specials=['<->'],
                                            special_first=True)
-    with open(os.path.join(OUTPUT_DIR, 'chars.txt'), 'w') as f:
+    with open(os.path.join(paths.OUTPUT_DIR, 'chars.txt'), 'w') as f:
         for character in vocab.get_itos():
             f.write(character + '\n')
 
@@ -81,12 +80,12 @@ def main():
     plt.ylabel('Loss')
     plt.legend()
     plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, 'CRNN_loss.png'), dpi=150)
+    plt.savefig(os.path.join(paths.OUTPUT_DIR, 'CRNN_loss.png'), dpi=150)
 
 
 def train(model, train_dataloader, val_dataloader, optimizer, loss_fn,
           total_iterations=ITERATIONS, eval_every=EVAL_EVERY,
-          save_to=OUTPUT_DIR, device=DEVICE):
+          save_to=paths.OUTPUT_DIR, device=DEVICE):
     model.train()
     train_loss = []
     val_loss = []

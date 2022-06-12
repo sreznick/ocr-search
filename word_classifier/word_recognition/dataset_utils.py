@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Iterable
+from typing import Optional, Callable, Union
 import os
 from PIL import Image
 import torch
@@ -92,15 +92,7 @@ def make_char_vocab(dataset: Dataset) -> tt.vocab.Vocab:
         chars, specials=['<->'], special_first=True)
 
 
-def decode(vocab: tt.vocab.Vocab, tokens: Iterable[int]) -> str:
-    """
-    Convert a sequence of tokens into a string.
-    """
-    itos = vocab.get_itos()
-    return ''.join(itos[ti] for ti in tokens)
-
-
-def collate_fn(batch: list[tuple], vocab: tt.vocab.Vocab
+def collate_fn(batch: list[tuple], vocab: Union[tt.vocab.Vocab, dict],
                ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     imgs, labels, target_lengths = zip(*batch)
 
