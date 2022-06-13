@@ -43,7 +43,7 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = crnn.CRNN(output_dim=len(itos))
     model.load_state_dict(
-        torch.load(os.path.join(paths.OUTPUT_DIR, 'backup.pth')))
+        torch.load(os.path.join(paths.OUTPUT_DIR, 'model.pth')))
     model.to(device)
 
     # evaluate on test set
