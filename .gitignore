@@ -1,8 +1,12 @@
 .ipynb_checkpoints/
 *__pycache__*
 .idea/
+.vscode/
 ocr-search.iml
 temp
 *__init__*
 venv
 requirements.txt
+word_classifier/data/*
+word_classifier/results/*.pth
+!*.keep
